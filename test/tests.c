@@ -359,6 +359,7 @@ int test_nonstrict(void) {
 
 int test_unmatched_brackets(void) {
 	const char *js;
+// strict and non-strict should return equal
 	js = "\"key 1\": 1234}";
 	check(parse(js, JSMN_ERROR_INVAL, 2));
 	js = "{\"key 1\": 1234";
@@ -367,12 +368,34 @@ int test_unmatched_brackets(void) {
 	check(parse(js, JSMN_ERROR_INVAL, 3));
 	js = "\"key 1\"}: 1234";
 	check(parse(js, JSMN_ERROR_INVAL, 3));
-	js = "\"key {1\": 1234";
-	check(parse(js, 2, 2,
+	js = "{\"key {1\": 1234}";
+	check(parse(js, 3, 3,
+				JSMN_OBJECT, -1, -1, 1,
 				JSMN_STRING, "key {1", 1,
 				JSMN_PRIMITIVE, "1234"));
+	js = "{\"key 1\": \"1234}\"";
+	check(parse(js, JSMN_ERROR_PART, 3));
+	js = "{\"key 1\": \"1234}\"}";
+	check(parse(js, 3, 3,
+				JSMN_OBJECT, -1, -1, 1,
+				JSMN_STRING, "key 1", 1,
+				JSMN_STRING, "1234}", 0));
+	js = "{\"key 1\": {\"key 2\": 1234}";
+	check(parse(js, JSMN_ERROR_PART, 5));
 	js = "{{\"key 1\": 1234}";
 	check(parse(js, JSMN_ERROR_PART, 4));
+	js = "{\"key 1\": 1234}}";
+	check(parse(js, JSMN_ERROR_INVAL, 4));
+	js = "{\"key 1\": 5678}: 1234}";
+	check(parse(js, JSMN_ERROR_INVAL, 5));
+
+#ifdef JSMN_STRICT
+	js = "{\"key 1\": { b1234 } : c4321}";
+	check(parse(js, JSMN_ERROR_INVAL, 8));
+#else
+	js = "{\"key 1\": {{ b1234 : c4321}";
+	check(parse(js, JSMN_ERROR_PART, 8));
+#endif
 	return 0;
 }
 
